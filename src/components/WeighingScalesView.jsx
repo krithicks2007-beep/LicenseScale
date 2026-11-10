@@ -95,24 +95,27 @@ export default function WeighingScalesView({ onNavigateToJobOrder }) {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1550px] mx-auto w-full space-y-6">
-      {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-2xl border border-gray-200/80 shadow-xs">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
-            Weighing Scales Inventory
-          </h2>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Registered weighing instruments, calibration classes, stamping cycles, and validity status.
-          </p>
+      {/* 4 Summary Stat Blocks (similar to Customer page) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-xs">
+          <span className="text-xs font-semibold text-gray-500">Total Scales</span>
+          <div className="text-2xl sm:text-3xl font-extrabold text-gray-900 mt-1">62</div>
+          <span className="text-[11px] text-emerald-600 font-semibold mt-1 inline-block">↑ 4 added this quarter</span>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onNavigateToJobOrder}
-            className="bg-[#0062ff] hover:bg-[#0055df] text-white font-semibold text-sm px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Verify Scale / New Job</span>
-          </button>
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-xs">
+          <span className="text-xs font-semibold text-gray-500">Valid & Certified</span>
+          <div className="text-2xl sm:text-3xl font-extrabold text-[#0062ff] mt-1">47</div>
+          <span className="text-[11px] text-gray-400 font-medium mt-1 inline-block">Active calibration</span>
+        </div>
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-xs">
+          <span className="text-xs font-semibold text-gray-500">Expiring in 45 Days</span>
+          <div className="text-2xl sm:text-3xl font-extrabold text-amber-600 mt-1">9</div>
+          <span className="text-[11px] text-amber-600 font-medium mt-1 inline-block">Re-verification due</span>
+        </div>
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-xs">
+          <span className="text-xs font-semibold text-gray-500">Expired Scales</span>
+          <div className="text-2xl sm:text-3xl font-extrabold text-rose-600 mt-1">6</div>
+          <span className="text-[11px] text-rose-600 font-medium mt-1 inline-block">Stamping expired</span>
         </div>
       </div>
 
@@ -205,4 +208,3 @@ export default function WeighingScalesView({ onNavigateToJobOrder }) {
     </div>
   );
 }
-

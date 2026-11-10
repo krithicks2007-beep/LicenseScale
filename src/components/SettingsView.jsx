@@ -36,30 +36,28 @@ export default function SettingsView() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1200px] mx-auto w-full space-y-6">
-      {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-2xl border border-gray-200/80 shadow-xs">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
-            System & Agency Settings
-          </h2>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Configure Legal Metrology agency licenses, automated alerts, and organization details.
-          </p>
+      {saved && (
+        <div className="flex items-center gap-2 bg-green-50 text-emerald-700 px-4 py-3 rounded-2xl border border-green-200 text-xs font-semibold animate-fadeIn shadow-xs">
+          <CheckCircle2 className="w-4 h-4" />
+          <span>Settings Saved Successfully!</span>
         </div>
-        {saved && (
-          <div className="flex items-center gap-2 bg-green-50 text-emerald-700 px-4 py-2 rounded-xl border border-green-200 text-xs font-semibold animate-fadeIn">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>Settings Saved Successfully!</span>
-          </div>
-        )}
-      </div>
+      )}
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Organization Profile */}
         <div className="bg-white rounded-2xl p-6 border border-gray-200/80 shadow-xs">
-          <div className="flex items-center gap-2 pb-4 mb-4 border-b border-gray-100 text-gray-900 font-bold text-base">
-            <Building className="w-5 h-5 text-[#0062ff]" />
-            <span>Agency Information</span>
+          <div className="flex items-center justify-between pb-4 mb-4 border-b border-gray-100">
+            <div className="flex items-center gap-2 text-gray-900 font-bold text-base">
+              <Building className="w-5 h-5 text-[#0062ff]" />
+              <span>Agency Information</span>
+            </div>
+            <button
+              type="submit"
+              className="bg-[#0062ff] hover:bg-[#0055df] text-white font-semibold text-xs px-5 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>Save Changes</span>
+            </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -148,19 +146,7 @@ export default function SettingsView() {
             </div>
           </div>
         </div>
-
-        {/* Save Button */}
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            className="bg-[#0062ff] hover:bg-[#0055df] text-white font-semibold text-sm px-7 py-2.5 rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer"
-          >
-            <Save className="w-4 h-4" />
-            <span>Save Settings</span>
-          </button>
-        </div>
       </form>
     </div>
   );
 }
-

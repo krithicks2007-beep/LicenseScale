@@ -68,7 +68,7 @@ export default function Header({
 
       {/* Right Controls: Create Job Order button (for Customers page), Notifications & User Profile */}
       <div className="flex items-center gap-3 sm:gap-4 shrink-0">
-        {/* Blue + Create Job Order Button in Header */}
+        {/* Blue Action Buttons in Header */}
         {activeNav === 'customers' && (
           <button
             onClick={onNavigateToJobOrder}
@@ -76,6 +76,15 @@ export default function Header({
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Create Job Order</span>
+          </button>
+        )}
+        {activeNav === 'weighing-scales' && (
+          <button
+            onClick={onNavigateToJobOrder}
+            className="bg-[#0062ff] hover:bg-[#0055df] text-white font-semibold text-xs sm:text-sm px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer shrink-0"
+          >
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <span>Verify Scale</span>
           </button>
         )}
 

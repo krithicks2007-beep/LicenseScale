@@ -107,32 +107,7 @@ export default function RemindersView() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1550px] mx-auto w-full space-y-6">
-      {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-2xl border border-gray-200/80 shadow-xs">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
-            License Renewal Reminders
-          </h2>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Automate and track 90-day, 45-day, and 30-day verification expiry alerts to customers.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => {
-              const allSent = {};
-              remindersData.forEach((r) => (allSent[r.id] = true));
-              setSentReminders(allSent);
-            }}
-            className="bg-[#0062ff] hover:bg-[#0055df] text-white font-semibold text-sm px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer"
-          >
-            <Send className="w-4 h-4 stroke-[2.5]" />
-            <span>Send All Due Reminders</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Summary Stats */}
+      {/* Summary Stats (at top) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-xs">
           <div className="flex items-center justify-between text-xs font-semibold text-gray-500">
@@ -184,20 +159,34 @@ export default function RemindersView() {
           />
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
-          {['all', '90-day', '45-day', '30-day', 'critical'].map((st) => (
-            <button
-              key={st}
-              onClick={() => setSelectedStage(st)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize whitespace-nowrap transition-colors cursor-pointer ${
-                selectedStage === st
-                  ? 'bg-[#0062ff] text-white shadow-xs'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200/70'
-              }`}
-            >
-              {st}
-            </button>
-          ))}
+        <div className="flex items-center gap-3 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+          <div className="flex items-center gap-1.5">
+            {['all', '90-day', '45-day', '30-day', 'critical'].map((st) => (
+              <button
+                key={st}
+                onClick={() => setSelectedStage(st)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize whitespace-nowrap transition-colors cursor-pointer ${
+                  selectedStage === st
+                    ? 'bg-[#0062ff] text-white shadow-xs'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200/70'
+                }`}
+              >
+                {st}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => {
+              const allSent = {};
+              remindersData.forEach((r) => (allSent[r.id] = true));
+              setSentReminders(allSent);
+            }}
+            className="bg-[#0062ff] hover:bg-[#0055df] text-white font-semibold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer whitespace-nowrap ml-auto"
+          >
+            <Send className="w-3.5 h-3.5" />
+            <span>Send Due Alerts</span>
+          </button>
         </div>
       </div>
 

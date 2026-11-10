@@ -70,27 +70,32 @@ export default function CertificatesView() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1550px] mx-auto w-full space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-2xl border border-gray-200/80 shadow-xs">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
-            Verification Certificates (VC)
-          </h2>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Government stamping certificates, test memos, and digital verification seals.
-          </p>
+      {/* 4 Summary Stat Blocks */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-xs">
+          <span className="text-xs font-semibold text-gray-500">Total Certificates</span>
+          <div className="text-2xl sm:text-3xl font-extrabold text-gray-900 mt-1">62</div>
+          <span className="text-[11px] text-emerald-600 font-semibold mt-1 inline-block">Issued this period</span>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => window.print()}
-            className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 font-semibold text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer"
-          >
-            <Printer className="w-4 h-4" />
-            <span>Print Report</span>
-          </button>
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-xs">
+          <span className="text-xs font-semibold text-gray-500">Active & Valid</span>
+          <div className="text-2xl sm:text-3xl font-extrabold text-[#0062ff] mt-1">47</div>
+          <span className="text-[11px] text-gray-400 font-medium mt-1 inline-block">Official LM stamps</span>
+        </div>
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-xs">
+          <span className="text-xs font-semibold text-gray-500">Expiring in 45 Days</span>
+          <div className="text-2xl sm:text-3xl font-extrabold text-amber-600 mt-1">9</div>
+          <span className="text-[11px] text-amber-600 font-medium mt-1 inline-block">Renewal required</span>
+        </div>
+        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-xs">
+          <span className="text-xs font-semibold text-gray-500">Expired Certificates</span>
+          <div className="text-2xl sm:text-3xl font-extrabold text-rose-600 mt-1">6</div>
+          <span className="text-[11px] text-rose-600 font-medium mt-1 inline-block">Re-stamping pending</span>
         </div>
       </div>
 
-      <div className="bg-white p-4 rounded-2xl border border-gray-200/80 shadow-xs flex items-center justify-between">
+      {/* Filter and Print Bar */}
+      <div className="bg-white p-4 rounded-2xl border border-gray-200/80 shadow-xs flex items-center justify-between gap-3">
         <div className="relative w-full sm:w-80">
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
@@ -101,8 +106,17 @@ export default function CertificatesView() {
             className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-gray-200 rounded-xl text-xs sm:text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#0062ff]"
           />
         </div>
+
+        <button
+          onClick={() => window.print()}
+          className="bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer"
+        >
+          <Printer className="w-4 h-4" />
+          <span>Print VC List</span>
+        </button>
       </div>
 
+      {/* Table */}
       <div className="bg-white rounded-2xl border border-gray-200/80 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs sm:text-sm">
@@ -158,4 +172,3 @@ export default function CertificatesView() {
     </div>
   );
 }
-
