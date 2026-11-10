@@ -68,7 +68,11 @@ export default function App() {
           </button>
 
           <div className="flex-1">
-            <Header title={headerTitle} activeNav={activeNav} />
+            <Header
+              title={headerTitle}
+              activeNav={activeNav}
+              onNavigateToJobOrder={() => setActiveNav('job-orders')}
+            />
           </div>
         </div>
 

@@ -4,12 +4,41 @@ import {
   ChevronDown,
   ClipboardCheck,
   LayoutDashboard,
-  Search,
+  Users,
+  Scale,
+  FileCheck2,
   Bell,
+  BarChart2,
+  Settings,
+  Search,
+  Plus,
 } from 'lucide-react';
 
-export default function Header({ title = 'New Job Order', activeNav = 'job-orders' }) {
-  const isDashboard = activeNav === 'dashboard';
+export default function Header({
+  title = 'New Job Order',
+  activeNav = 'job-orders',
+  onNavigateToJobOrder,
+}) {
+  const getNavIcon = () => {
+    switch (activeNav) {
+      case 'dashboard':
+        return <LayoutDashboard className="w-5 h-5 text-[#0062ff] stroke-[2.2]" />;
+      case 'customers':
+        return <Users className="w-5 h-5 text-[#0062ff] stroke-[2.2]" />;
+      case 'weighing-scales':
+        return <Scale className="w-5 h-5 text-[#0062ff] stroke-[2.2]" />;
+      case 'certificates':
+        return <FileCheck2 className="w-5 h-5 text-[#0062ff] stroke-[2.2]" />;
+      case 'reminders':
+        return <Bell className="w-5 h-5 text-[#0062ff] stroke-[2.2]" />;
+      case 'reports':
+        return <BarChart2 className="w-5 h-5 text-[#0062ff] stroke-[2.2]" />;
+      case 'settings':
+        return <Settings className="w-5 h-5 text-[#0062ff] stroke-[2.2]" />;
+      default:
+        return <ClipboardCheck className="w-5 h-5 text-[#0062ff] stroke-[2.2]" />;
+    }
+  };
 
   return (
     <header className="h-18 bg-white border-b border-gray-200/80 px-4 sm:px-8 flex items-center justify-between sticky top-0 z-20 gap-4">
@@ -17,11 +46,7 @@ export default function Header({ title = 'New Job Order', activeNav = 'job-order
       <div className="flex items-center gap-3 shrink-0">
         <div className="text-[#0062ff] flex items-center justify-center">
           <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200/80 flex items-center justify-center text-[#0062ff]">
-            {isDashboard ? (
-              <LayoutDashboard className="w-5 h-5 text-[#0062ff] stroke-[2.2]" />
-            ) : (
-              <ClipboardCheck className="w-5 h-5 text-[#0062ff] stroke-[2.2]" />
-            )}
+            {getNavIcon()}
           </div>
         </div>
         <h1 className="text-xl sm:text-[22px] font-bold text-gray-900 tracking-tight">
@@ -29,7 +54,7 @@ export default function Header({ title = 'New Job Order', activeNav = 'job-order
         </h1>
       </div>
 
-      {/* Middle Search Bar (Dashboard feature from uploaded image) */}
+      {/* Middle Search Bar */}
       <div className="hidden md:flex items-center flex-1 max-w-md mx-4">
         <div className="relative w-full">
           <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -41,8 +66,19 @@ export default function Header({ title = 'New Job Order', activeNav = 'job-order
         </div>
       </div>
 
-      {/* Right Controls: Notifications & User Profile */}
+      {/* Right Controls: Create Job Order button (for Customers page), Notifications & User Profile */}
       <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+        {/* Blue + Create Job Order Button in Header */}
+        {activeNav === 'customers' && (
+          <button
+            onClick={onNavigateToJobOrder}
+            className="bg-[#0062ff] hover:bg-[#0055df] text-white font-semibold text-xs sm:text-sm px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer shrink-0"
+          >
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <span>+ Create Job Order</span>
+          </button>
+        )}
+
         {/* Notification Bell with Badge */}
         <button
           title="Notifications"

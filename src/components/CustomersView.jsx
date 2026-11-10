@@ -3,7 +3,6 @@ import {
   Users,
   Search,
   Filter,
-  Plus,
   Phone,
   Mail,
   MapPin,
@@ -80,6 +79,42 @@ export default function CustomersView({ onNavigateToJobOrder }) {
       statusColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
       lastRenewal: '18-Feb-2026',
     },
+    {
+      id: 'CUST-006',
+      name: 'Royal Agro Industries',
+      contactPerson: 'S. Dharmalingam',
+      phone: '+91 98422 77110',
+      email: 'dharmal@royalagro.in',
+      location: 'SIPCOT Industrial Complex, Hosur',
+      scalesCount: 8,
+      status: 'Expiring Soon',
+      statusColor: 'bg-amber-50 text-amber-700 border-amber-200',
+      lastRenewal: '22-Nov-2025',
+    },
+    {
+      id: 'CUST-007',
+      name: 'Saraswathi Ginning Mills',
+      contactPerson: 'V. Palanisamy',
+      phone: '+91 94420 33890',
+      email: 'saraswathi.mills@gmail.com',
+      location: 'Dharapuram Road, Tirupur',
+      scalesCount: 5,
+      status: 'Active',
+      statusColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      lastRenewal: '14-Mar-2026',
+    },
+    {
+      id: 'CUST-008',
+      name: 'Salem Steel Traders',
+      contactPerson: 'N. Murugan',
+      phone: '+91 97880 55120',
+      email: 'murugan@salemsteel.com',
+      location: 'Steel Plant Road, Salem',
+      scalesCount: 3,
+      status: 'Expired',
+      statusColor: 'bg-rose-50 text-rose-700 border-rose-200',
+      lastRenewal: '12-Oct-2025',
+    },
   ];
 
   const filtered = customers.filter((c) => {
@@ -93,47 +128,26 @@ export default function CustomersView({ onNavigateToJobOrder }) {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1550px] mx-auto w-full space-y-6">
-      {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-2xl border border-gray-200/80 shadow-xs">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
-            Customer Directory
-          </h2>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Manage client profiles, contact information, and connected weighing machines.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onNavigateToJobOrder}
-            className="bg-[#0062ff] hover:bg-[#0055df] text-white font-semibold text-sm px-5 py-2.5 rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>Create Job Order</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Quick Summary Cards */}
+      {/* Quick Summary Cards (Moved to the very top) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-xs">
           <span className="text-xs font-semibold text-gray-500">Total Customers</span>
-          <div className="text-2xl sm:text-3xl font-extrabold text-gray-900 mt-1">24</div>
-          <span className="text-[11px] text-emerald-600 font-semibold mt-1 inline-block">↑ 3 new this month</span>
+          <div className="text-2xl sm:text-3xl font-extrabold text-gray-900 mt-1">38</div>
+          <span className="text-[11px] text-emerald-600 font-semibold mt-1 inline-block">↑ 5 new this month</span>
         </div>
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-xs">
           <span className="text-xs font-semibold text-gray-500">Active Licenses</span>
-          <div className="text-2xl sm:text-3xl font-extrabold text-[#0062ff] mt-1">42</div>
+          <div className="text-2xl sm:text-3xl font-extrabold text-[#0062ff] mt-1">62</div>
           <span className="text-[11px] text-gray-400 font-medium mt-1 inline-block">Across all clients</span>
         </div>
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-xs">
           <span className="text-xs font-semibold text-gray-500">Expiring in 45 Days</span>
-          <div className="text-2xl sm:text-3xl font-extrabold text-amber-600 mt-1">8</div>
+          <div className="text-2xl sm:text-3xl font-extrabold text-amber-600 mt-1">9</div>
           <span className="text-[11px] text-amber-600 font-medium mt-1 inline-block">Reminders scheduled</span>
         </div>
         <div className="bg-white p-4 sm:p-5 rounded-2xl border border-gray-200/80 shadow-xs">
           <span className="text-xs font-semibold text-gray-500">Expired Licenses</span>
-          <div className="text-2xl sm:text-3xl font-extrabold text-rose-600 mt-1">3</div>
+          <div className="text-2xl sm:text-3xl font-extrabold text-rose-600 mt-1">6</div>
           <span className="text-[11px] text-rose-600 font-medium mt-1 inline-block">Urgent action needed</span>
         </div>
       </div>
@@ -234,4 +248,3 @@ export default function CustomersView({ onNavigateToJobOrder }) {
     </div>
   );
 }
-
