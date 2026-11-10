@@ -75,7 +75,7 @@ export default function Header({
             className="bg-[#0062ff] hover:bg-[#0055df] text-white font-semibold text-xs sm:text-sm px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl flex items-center gap-2 shadow-xs transition-all cursor-pointer shrink-0"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span>+ Create Job Order</span>
+            <span>Create Job Order</span>
           </button>
         )}
 
