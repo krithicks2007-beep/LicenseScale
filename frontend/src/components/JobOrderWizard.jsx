@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Stepper from './Stepper';
 import {
   Search,
@@ -15,34 +15,75 @@ import {
   FileText,
   Printer,
   RotateCcw,
+  Sparkles,
+  Loader2,
+  Eye,
+  ChevronDown,
+  ChevronUp,
+  AlertCircle,
+  Cpu,
 } from 'lucide-react';
+import {
+  extractDetailsFromImage,
+  toInputDateFormat,
+  checkBackendHealth,
+} from '../utils/ocrParser';
 
 export default function JobOrderWizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Form state for subsequent steps
+  // Backend connection status
+  const [backendOnline, setBackendOnline] = useState(null); // null = checking, true = up, false = down
+
+  // OCR state
+  const [ocrStatus, setOcrStatus] = useState('idle'); // 'idle' | 'processing' | 'done' | 'error'
+  const [ocrProgress, setOcrProgress] = useState(0);
+  const [ocrErrorMsg, setOcrErrorMsg] = useState('');
+  const [extractedData, setExtractedData] = useState(null);
+  const [showRawText, setShowRawText] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    checkBackendHealth().then((isUp) => {
+      if (isMounted) setBackendOnline(isUp);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Clean dynamic form state - ZERO hardcoded fallbacks
   const [formData, setFormData] = useState({
-    customerName: 'Sri Lakshmi Steels & Weighbridges',
-    contactPerson: 'K. Rajasekaran',
-    phone: '+91 98421 55678',
-    email: 'lakshmisteels@example.com',
-    address: '42/1, Industrial Estate, SIDCO, Coimbatore - 641021',
-    scaleMake: 'Avery India',
-    scaleModel: 'E1205 Pitless Weighbridge',
-    serialNo: 'WB-2023-8991',
-    capacity: '60,000 kg (60 Tonnes)',
-    division: '10 kg',
-    lastVerificationDate: '2025-11-14',
-    nextDueDate: '2026-11-14',
-    govtStampingFee: '2500',
-    serviceCharge: '1200',
-    calibrationFee: '800',
+    cvNumber: '',
+    traderNo: '',
+    applicationNo: '',
+    customerName: '',
+    contactPerson: '',
+    phone: '',
+    email: '',
+    address: '',
+    scaleMake: '',
+    scaleModel: '',
+    serialNo: '',
+    capacity: '',
+    accuracyClass: '',
+    division: '',
+    lastVerificationDate: '',
+    nextDueDate: '',
+    govtStampingFee: '',
+    serviceCharge: '350',
+    calibrationFee: '250',
     gstPercent: '18',
+    officerName: '',
+    repairer: '',
+    repairerLicence: '',
+    receiptNo: '',
   });
 
   const handleInputChange = (field, val) => {
@@ -55,20 +96,80 @@ export default function JobOrderWizard() {
       setSearchResults(null);
       return;
     }
+    const q = searchQuery.trim();
     setSearchResults([
       {
-        id: 'CERT-2024-8841',
-        customerName: 'Sri Lakshmi Steels & Weighbridges',
+        id: q.toUpperCase(),
+        customerName: `Found Record for: ${q}`,
         mobile: '+91 98421 55678',
-        scaleType: 'Electronic Weighbridge 60T',
-        expiry: '15-Dec-2024',
+        scaleType: 'Electronic Weighing Scale',
+        expiry: '15-Dec-2026',
       },
     ]);
   };
 
+  // OCR Processing logic - extracts strictly what is in the uploaded file
+  const processFileForOCR = async (file) => {
+    if (!file) return;
+    setUploadedFile(file);
+
+    if (file.type.startsWith('image/')) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    } else {
+      setPreviewUrl(null);
+    }
+
+    setOcrStatus('processing');
+    setOcrProgress(10);
+    setOcrErrorMsg('');
+
+    try {
+      const result = await extractDetailsFromImage(file, (p) => {
+        setOcrProgress(p);
+      });
+
+      const data = result.data || {};
+      setExtractedData({
+        ...data,
+        rawText: result.rawText,
+        rawLines: result.rawLines,
+      });
+      setOcrStatus('done');
+      setBackendOnline(true);
+
+      // Set ONLY the actual values extracted from THIS uploaded file
+      setFormData((prev) => ({
+        ...prev,
+        cvNumber: data.cvNumber || '',
+        traderNo: data.traderNo || '',
+        applicationNo: data.applicationNo || '',
+        customerName: data.customerName || '',
+        address: data.customerAddress || '',
+        scaleMake: data.scaleMake || '',
+        scaleModel: data.scaleModel || '',
+        serialNo: data.serialNo || '',
+        capacity: data.capacity || '',
+        accuracyClass: data.accuracyClass || '',
+        lastVerificationDate: toInputDateFormat(data.verificationDate) || '',
+        nextDueDate: toInputDateFormat(data.nextDueDate) || '',
+        govtStampingFee: data.stampingFee ? String(parseInt(data.stampingFee, 10) || data.stampingFee) : '',
+        officerName: data.officerName ? `${data.officerName}${data.stampingOffice ? `, ${data.stampingOffice}` : ''}` : '',
+        repairer: data.repairer || '',
+        repairerLicence: data.repairerLicence || '',
+        receiptNo: data.receiptNo || '',
+      }));
+    } catch (err) {
+      console.error(err);
+      setOcrStatus('error');
+      setOcrErrorMsg(err.message || 'Error communicating with OCR server.');
+      setBackendOnline(false);
+    }
+  };
+
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
-      setUploadedFile(e.target.files[0]);
+      processFileForOCR(e.target.files[0]);
     }
   };
 
@@ -86,7 +187,7 @@ export default function JobOrderWizard() {
     e.preventDefault();
     setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      setUploadedFile(e.dataTransfer.files[0]);
+      processFileForOCR(e.dataTransfer.files[0]);
     }
   };
 
@@ -116,13 +217,16 @@ export default function JobOrderWizard() {
           <Stepper currentStep={currentStep} onStepClick={setCurrentStep} />
         </div>
 
-        {/* STEP 1: Search / Upload (EXACT IMAGE RECREATION) */}
+        {/* STEP 1: Search / Upload */}
         {currentStep === 1 && (
           <>
             <div className="text-center my-4 sm:my-6">
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
                 Step 1 : Find Existing Record or Upload Certificate
               </h2>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                Upload a scanned Verification Certificate (VC) to automatically extract all customer, scale & fee details via OCR.
+              </p>
             </div>
 
             <div className="my-auto py-4">
@@ -130,17 +234,14 @@ export default function JobOrderWizard() {
                 {/* Card A: Search Existing Record */}
                 <div className="bg-[#f0f6ff] border border-blue-100 rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-between transition-all hover:shadow-sm">
                   <div className="flex flex-col items-center w-full">
-                    {/* Search Icon Circle */}
                     <div className="w-16 h-16 rounded-full bg-[#dbeafe] flex items-center justify-center mb-4">
                       <Search className="w-8 h-8 text-[#0062ff] stroke-[2.5]" />
                     </div>
 
-                    {/* Subheading */}
                     <h3 className="text-lg sm:text-[19px] font-bold text-gray-900 mb-6 text-center">
                       A. Search Existing Record
                     </h3>
 
-                    {/* Search Input Box */}
                     <form onSubmit={handleSearch} className="w-full max-w-md">
                       <div className="relative flex items-center">
                         <Search className="w-5 h-5 text-gray-400 absolute left-4 pointer-events-none" />
@@ -153,7 +254,6 @@ export default function JobOrderWizard() {
                         />
                       </div>
 
-                      {/* Search Button */}
                       <div className="flex justify-center mt-6">
                         <button
                           type="submit"
@@ -164,7 +264,6 @@ export default function JobOrderWizard() {
                       </div>
                     </form>
 
-                    {/* Search Result Feedback */}
                     {searchResults && (
                       <div className="w-full max-w-md mt-4 p-3.5 bg-white rounded-lg border border-blue-200 text-left text-xs text-gray-700 shadow-xs">
                         <div className="flex items-center justify-between mb-1">
@@ -177,12 +276,19 @@ export default function JobOrderWizard() {
                           </button>
                         </div>
                         <div className="font-semibold text-gray-900">{searchResults[0].customerName}</div>
-                        <div className="text-gray-500">Cert: {searchResults[0].id} | {searchResults[0].mobile}</div>
+                        <div className="text-gray-500">Ref: {searchResults[0].id} | {searchResults[0].mobile}</div>
                         <button
-                          onClick={() => setCurrentStep(2)}
-                          className="mt-2 text-xs font-semibold text-[#0062ff] hover:underline flex items-center gap-1"
+                          onClick={() => {
+                            setFormData((prev) => ({
+                              ...prev,
+                              customerName: searchResults[0].customerName,
+                              cvNumber: searchResults[0].id,
+                            }));
+                            setCurrentStep(2);
+                          }}
+                          className="mt-2 text-xs font-semibold text-[#0062ff] hover:underline flex items-center gap-1 cursor-pointer"
                         >
-                          <span>Use this record</span>
+                          <span>Use this record & proceed</span>
                           <ArrowRight className="w-3 h-3" />
                         </button>
                       </div>
@@ -202,70 +308,199 @@ export default function JobOrderWizard() {
                   </div>
                 </div>
 
-                {/* Card B: Upload VC Certificate */}
+                {/* Card B: Upload VC Certificate (PURE DYNAMIC OCR) */}
                 <div className="bg-[#f2fcf5] border border-green-100 rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-between transition-all hover:shadow-sm">
                   <div className="flex flex-col items-center w-full">
                     <div className="w-16 h-16 rounded-full bg-[#dcfce7] flex items-center justify-center mb-4">
                       <CloudUpload className="w-8 h-8 text-[#16a34a] stroke-[2.3]" />
                     </div>
 
-                    <h3 className="text-lg sm:text-[19px] font-bold text-gray-900 mb-5 text-center">
-                      B. Upload VC Certificate
-                    </h3>
+                    <div className="flex flex-wrap items-center justify-center gap-2 mb-3">
+                      <h3 className="text-lg sm:text-[19px] font-bold text-gray-900 text-center">
+                        B. Upload VC Certificate
+                      </h3>
+                      <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <Sparkles className="w-3 h-3 text-emerald-600" />
+                        <span>EasyOCR AI</span>
+                      </span>
+                    </div>
 
+                    {backendOnline === false && (
+                      <div className="w-full max-w-md mb-3 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-[11px] flex items-center justify-between">
+                        <span className="flex items-center gap-1.5 font-medium">
+                          <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                          <span>OCR Backend offline</span>
+                        </span>
+                        <code className="text-[10px] bg-amber-100 px-1.5 py-0.5 rounded text-amber-900 font-mono">
+                          cd backend; python main.py
+                        </code>
+                      </div>
+                    )}
+
+                    {/* Drag and Drop Zone */}
                     <div
                       onDragOver={handleDragOver}
                       onDragLeave={handleDragLeave}
                       onDrop={handleDrop}
-                      className={`w-full max-w-md border-2 border-dashed rounded-xl py-6 px-4 flex flex-col items-center justify-center transition-all ${
+                      className={`w-full max-w-md border-2 border-dashed rounded-xl py-6 px-4 flex flex-col items-center justify-center transition-all relative ${
                         isDragging
                           ? 'border-[#16a34a] bg-green-50/80 scale-[1.01]'
                           : 'border-[#86efac] bg-emerald-50/20 hover:bg-emerald-50/40'
                       }`}
                     >
-                      <div className="w-12 h-12 flex items-center justify-center mb-2">
-                        <CloudUpload className="w-10 h-10 text-[#0062ff] stroke-[2]" />
-                      </div>
+                      {ocrStatus === 'processing' ? (
+                        <div className="py-6 flex flex-col items-center justify-center space-y-3 w-full">
+                          <Loader2 className="w-10 h-10 text-[#0062ff] animate-spin" />
+                          <div className="text-center">
+                            <span className="text-sm font-bold text-gray-900 block">
+                              Scanning Certificate with OCR...
+                            </span>
+                            <span className="text-xs text-gray-500 font-medium">
+                              Reading actual text from image ({ocrProgress}%)
+                            </span>
+                          </div>
+                          <div className="w-3/4 bg-gray-200 rounded-full h-2 overflow-hidden">
+                            <div
+                              className="bg-[#0062ff] h-2 transition-all duration-300 rounded-full"
+                              style={{ width: `${Math.max(10, ocrProgress)}%` }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="w-12 h-12 flex items-center justify-center mb-2">
+                            <CloudUpload className="w-10 h-10 text-[#0062ff] stroke-[2]" />
+                          </div>
 
-                      <p className="text-sm font-semibold text-gray-800 text-center mb-1">
-                        Drag & drop certificate here
-                      </p>
-                      <span className="text-xs text-gray-500 mb-3 font-medium">or</span>
+                          <p className="text-sm font-semibold text-gray-800 text-center mb-1">
+                            Drag & drop certificate here
+                          </p>
+                          <span className="text-xs text-gray-500 mb-3 font-medium">or</span>
 
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileChange}
-                        accept=".pdf,.png,.jpg,.jpeg"
-                        className="hidden"
-                      />
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            accept="image/*,.pdf"
+                            className="hidden"
+                          />
 
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="bg-[#008744] hover:bg-[#00733a] active:scale-[0.98] text-white font-semibold text-sm px-6 py-2 rounded-lg flex items-center gap-2 transition-all shadow-xs cursor-pointer"
-                      >
-                        <Upload className="w-4 h-4 stroke-[2.5]" />
-                        <span>Upload File</span>
-                      </button>
-
-                      {uploadedFile && (
-                        <div className="mt-3 flex items-center gap-2 bg-white px-3 py-1.5 rounded-md border border-green-300 text-xs text-gray-800 font-medium">
-                          <CheckCircle2 className="w-4 h-4 text-[#16a34a]" />
-                          <span className="truncate max-w-[200px]">{uploadedFile.name}</span>
                           <button
                             type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setUploadedFile(null);
-                            }}
-                            className="text-gray-400 hover:text-red-500 ml-1 cursor-pointer"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="bg-[#008744] hover:bg-[#00733a] active:scale-[0.98] text-white font-semibold text-sm px-6 py-2 rounded-lg flex items-center gap-2 transition-all shadow-xs cursor-pointer"
                           >
-                            <X className="w-3.5 h-3.5" />
+                            <Upload className="w-4 h-4 stroke-[2.5]" />
+                            <span>Upload File</span>
                           </button>
-                        </div>
+                        </>
                       )}
                     </div>
+
+                    {/* OCR Error Display */}
+                    {ocrStatus === 'error' && (
+                      <div className="w-full max-w-md mt-4 p-3.5 bg-red-50 rounded-xl border border-red-200 text-left animate-fadeIn">
+                        <div className="flex items-start gap-2.5">
+                          <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-xs font-bold text-red-800">Extraction Error</p>
+                            <p className="text-[11px] text-red-700 mt-0.5 break-words">{ocrErrorMsg}</p>
+                            <div className="mt-2 pt-2 border-t border-red-100 text-[11px] text-gray-600">
+                              <span>To run OCR backend: </span>
+                              <code className="bg-red-100 px-1 py-0.5 rounded text-red-900 font-mono text-[10px]">
+                                cd backend; python -m uvicorn main:app --port 8000
+                              </code>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* OCR EXTRACTED DETAILS PREVIEW */}
+                    {ocrStatus === 'done' && extractedData && (
+                      <div className="w-full max-w-md mt-4 p-4 bg-white rounded-xl border border-emerald-300 shadow-xs animate-fadeIn text-left">
+                        <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                          <div className="flex items-center gap-1.5 text-emerald-700 font-bold text-xs sm:text-sm">
+                            <CheckCircle2 className="w-4 h-4 text-[#16a34a]" />
+                            <span>OCR Extracted from Uploaded File</span>
+                          </div>
+                          {extractedData.cvNumber && (
+                            <span className="text-[11px] font-bold bg-blue-50 text-[#0062ff] px-2 py-0.5 rounded-md border border-blue-200">
+                              CV: {extractedData.cvNumber}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Extracted Fields Grid */}
+                        <div className="grid grid-cols-2 gap-2 text-xs my-3 text-gray-700">
+                          <div>
+                            <span className="text-[10px] font-bold text-gray-400 block uppercase">Customer / Firm</span>
+                            <span className="font-semibold text-gray-900 truncate block">
+                              {extractedData.customerName || <span className="text-gray-400 font-normal italic">Not detected</span>}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold text-gray-400 block uppercase">Make & Model</span>
+                            <span className="font-semibold text-gray-900 truncate block">
+                              {(extractedData.scaleMake || extractedData.scaleModel) ? `${extractedData.scaleMake} ${extractedData.scaleModel}`.trim() : <span className="text-gray-400 font-normal italic">Not detected</span>}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold text-gray-400 block uppercase">Machine / Serial No</span>
+                            <span className="font-semibold text-gray-900">
+                              {extractedData.serialNo || <span className="text-gray-400 font-normal italic">Not detected</span>}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold text-gray-400 block uppercase">Capacity</span>
+                            <span className="font-semibold text-gray-900">
+                              {extractedData.capacity || <span className="text-gray-400 font-normal italic">Not detected</span>}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold text-gray-400 block uppercase">Stamping Fee</span>
+                            <span className="font-bold text-emerald-600">
+                              {extractedData.stampingFee ? `₹ ${extractedData.stampingFee}` : <span className="text-gray-400 font-normal italic">Not detected</span>}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold text-gray-400 block uppercase">Next Due Date</span>
+                            <span className="font-semibold text-amber-600">
+                              {extractedData.nextDueDate || <span className="text-gray-400 font-normal italic">Not detected</span>}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                          <button
+                            type="button"
+                            onClick={() => setShowRawText(!showRawText)}
+                            className="text-[11px] font-medium text-gray-500 hover:text-gray-800 flex items-center gap-1 cursor-pointer"
+                          >
+                            <Eye className="w-3 h-3" />
+                            <span>{showRawText ? 'Hide Raw Text' : 'View Raw OCR Text'}</span>
+                            {showRawText ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setCurrentStep(2)}
+                            className="bg-[#0062ff] hover:bg-[#0055df] text-white font-semibold text-xs px-3.5 py-1.5 rounded-lg flex items-center gap-1 shadow-xs cursor-pointer"
+                          >
+                            <span>Verify in Step 2</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Raw Extracted Text Viewer */}
+                        {showRawText && (
+                          <div className="mt-3 p-2 bg-slate-50 border border-gray-200 rounded-lg max-h-36 overflow-y-auto text-[10px] font-mono text-gray-600 whitespace-pre-wrap">
+                            {extractedData.rawText || 'No raw text recognized.'}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -273,7 +508,7 @@ export default function JobOrderWizard() {
           </>
         )}
 
-        {/* STEP 2: Verify & Edit */}
+        {/* STEP 2: Verify & Edit (ONLY REAL EXTRACTED VALUES) */}
         {currentStep === 2 && (
           <div className="py-4 my-auto">
             <div className="text-center mb-8">
@@ -281,25 +516,34 @@ export default function JobOrderWizard() {
                 Step 2 : Verify & Edit Customer & Scale Details
               </h2>
               <p className="text-sm text-gray-500 mt-1">
-                Please verify the extracted details and correct any discrepancies.
+                Details extracted from your uploaded certificate appear below. Please review or adjust if needed.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
               {/* Customer Section */}
               <div className="border border-gray-200 rounded-xl p-5 bg-slate-50/50">
-                <div className="flex items-center gap-2 mb-4 text-[#0062ff] font-semibold text-sm">
-                  <Building className="w-4 h-4" />
-                  <span>Customer Information</span>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2 text-[#0062ff] font-semibold text-sm">
+                    <Building className="w-4 h-4" />
+                    <span>Customer Information</span>
+                  </div>
+                  {formData.cvNumber && (
+                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      CV: {formData.cvNumber}
+                    </span>
+                  )}
                 </div>
+
                 <div className="space-y-3">
                   <div>
                     <label className="block text-xs font-semibold text-gray-600 mb-1">Customer / Firm Name</label>
                     <input
                       type="text"
+                      placeholder="Enter customer / firm name"
                       value={formData.customerName}
                       onChange={(e) => handleInputChange('customerName', e.target.value)}
-                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-[#0062ff]"
+                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-semibold text-gray-900 focus:ring-2 focus:ring-[#0062ff]"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -307,6 +551,7 @@ export default function JobOrderWizard() {
                       <label className="block text-xs font-semibold text-gray-600 mb-1">Contact Person</label>
                       <input
                         type="text"
+                        placeholder="Contact person name"
                         value={formData.contactPerson}
                         onChange={(e) => handleInputChange('contactPerson', e.target.value)}
                         className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-[#0062ff]"
@@ -316,6 +561,7 @@ export default function JobOrderWizard() {
                       <label className="block text-xs font-semibold text-gray-600 mb-1">Mobile No.</label>
                       <input
                         type="text"
+                        placeholder="+91 Mobile number"
                         value={formData.phone}
                         onChange={(e) => handleInputChange('phone', e.target.value)}
                         className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-[#0062ff]"
@@ -326,9 +572,20 @@ export default function JobOrderWizard() {
                     <label className="block text-xs font-semibold text-gray-600 mb-1">Premises Address</label>
                     <textarea
                       rows={2}
+                      placeholder="Full premises address"
                       value={formData.address}
                       onChange={(e) => handleInputChange('address', e.target.value)}
                       className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-[#0062ff]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Stamping Officer / Inspector</label>
+                    <input
+                      type="text"
+                      placeholder="Inspector name & office"
+                      value={formData.officerName}
+                      onChange={(e) => handleInputChange('officerName', e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-700 focus:ring-2 focus:ring-[#0062ff]"
                     />
                   </div>
                 </div>
@@ -336,25 +593,35 @@ export default function JobOrderWizard() {
 
               {/* Weighing Scale Section */}
               <div className="border border-gray-200 rounded-xl p-5 bg-slate-50/50">
-                <div className="flex items-center gap-2 mb-4 text-[#0062ff] font-semibold text-sm">
-                  <Scale className="w-4 h-4" />
-                  <span>Weighing Scale Specifications</span>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2 text-[#0062ff] font-semibold text-sm">
+                    <Scale className="w-4 h-4" />
+                    <span>Weighing Scale Specifications</span>
+                  </div>
+                  {formData.accuracyClass && (
+                    <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                      {formData.accuracyClass}
+                    </span>
+                  )}
                 </div>
+
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 mb-1">Make / Brand</label>
                       <input
                         type="text"
+                        placeholder="e.g. MODERN, AVERY"
                         value={formData.scaleMake}
                         onChange={(e) => handleInputChange('scaleMake', e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-[#0062ff]"
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-semibold text-gray-900 focus:ring-2 focus:ring-[#0062ff]"
                       />
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 mb-1">Model</label>
                       <input
                         type="text"
+                        placeholder="e.g. MSP 300"
                         value={formData.scaleModel}
                         onChange={(e) => handleInputChange('scaleModel', e.target.value)}
                         className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-[#0062ff]"
@@ -363,18 +630,20 @@ export default function JobOrderWizard() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1">Serial Number</label>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Serial / Machine No</label>
                       <input
                         type="text"
+                        placeholder="e.g. 67772"
                         value={formData.serialNo}
                         onChange={(e) => handleInputChange('serialNo', e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-[#0062ff]"
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-[#0062ff] focus:ring-2 focus:ring-[#0062ff]"
                       />
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 mb-1">Capacity</label>
                       <input
                         type="text"
+                        placeholder="e.g. 300 kg"
                         value={formData.capacity}
                         onChange={(e) => handleInputChange('capacity', e.target.value)}
                         className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-[#0062ff]"
@@ -383,7 +652,7 @@ export default function JobOrderWizard() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1">Last Verification</label>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Stamping Date</label>
                       <input
                         type="date"
                         value={formData.lastVerificationDate}
@@ -392,14 +661,24 @@ export default function JobOrderWizard() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-1">Next Expiry Date</label>
+                      <label className="block text-xs font-semibold text-gray-600 mb-1">Next Expiry Due Date</label>
                       <input
                         type="date"
                         value={formData.nextDueDate}
                         onChange={(e) => handleInputChange('nextDueDate', e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 focus:ring-2 focus:ring-[#0062ff]"
+                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-semibold text-amber-700 focus:ring-2 focus:ring-[#0062ff]"
                       />
                     </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Repairer Agency</label>
+                    <input
+                      type="text"
+                      placeholder="Repairer agency name"
+                      value={formData.repairer}
+                      onChange={(e) => handleInputChange('repairer', e.target.value)}
+                      className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg text-xs text-gray-700 focus:ring-2 focus:ring-[#0062ff]"
+                    />
                   </div>
                 </div>
               </div>
@@ -415,27 +694,37 @@ export default function JobOrderWizard() {
                 Step 3 : Verification & Stamping Charges
               </h2>
               <p className="text-sm text-gray-500 mt-1">
-                Calculate official government stamping fees, calibration charges, and service tax.
+                Govt Stamping Fee extracted from certificate:{' '}
+                <span className="font-bold text-emerald-600">
+                  {formData.govtStampingFee ? `₹ ${formData.govtStampingFee}` : 'Enter fee below'}
+                </span>
               </p>
             </div>
 
             <div className="max-w-2xl mx-auto bg-slate-50/60 border border-gray-200 rounded-2xl p-6 sm:p-8">
               <div className="space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-gray-200">
-                  <span className="text-sm font-semibold text-gray-800">Govt. Stamping / Re-verification Fee</span>
+                  <div>
+                    <span className="text-sm font-semibold text-gray-800 block">Govt. Stamping Fee</span>
+                    <span className="text-xs text-gray-400">Official fee from certificate</span>
+                  </div>
                   <div className="flex items-center gap-1">
                     <span className="text-sm text-gray-500">₹</span>
                     <input
                       type="number"
+                      placeholder="0"
                       value={formData.govtStampingFee}
                       onChange={(e) => handleInputChange('govtStampingFee', e.target.value)}
-                      className="w-32 px-3 py-1.5 text-right bg-white border border-gray-300 rounded-lg text-sm font-medium"
+                      className="w-32 px-3 py-1.5 text-right bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-900"
                     />
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between pb-3 border-b border-gray-200">
-                  <span className="text-sm font-semibold text-gray-800">Calibration & Testing Fee</span>
+                  <div>
+                    <span className="text-sm font-semibold text-gray-800 block">Calibration & Testing Fee</span>
+                    <span className="text-xs text-gray-400">Technical inspection fee</span>
+                  </div>
                   <div className="flex items-center gap-1">
                     <span className="text-sm text-gray-500">₹</span>
                     <input
@@ -448,7 +737,10 @@ export default function JobOrderWizard() {
                 </div>
 
                 <div className="flex items-center justify-between pb-3 border-b border-gray-200">
-                  <span className="text-sm font-semibold text-gray-800">Service & Documentation Charges</span>
+                  <div>
+                    <span className="text-sm font-semibold text-gray-800 block">Service & Documentation Charges</span>
+                    <span className="text-xs text-gray-400">Portal submission & handling</span>
+                  </div>
                   <div className="flex items-center gap-1">
                     <span className="text-sm text-gray-500">₹</span>
                     <input
@@ -495,15 +787,23 @@ export default function JobOrderWizard() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-gray-100">
                 <div>
                   <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Customer</h4>
-                  <div className="font-bold text-gray-900 text-base">{formData.customerName}</div>
-                  <div className="text-sm text-gray-600">{formData.contactPerson} • {formData.phone}</div>
-                  <div className="text-xs text-gray-500 mt-1">{formData.address}</div>
+                  <div className="font-bold text-gray-900 text-base">
+                    {formData.customerName || 'Customer Not Specified'}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {formData.contactPerson || 'No contact'} • {formData.phone || 'No phone'}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">{formData.address || 'No address'}</div>
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Weighing Scale</h4>
-                  <div className="font-bold text-gray-900 text-base">{formData.scaleMake} - {formData.scaleModel}</div>
-                  <div className="text-sm text-gray-600">S/N: {formData.serialNo} • Cap: {formData.capacity}</div>
-                  <div className="text-xs text-gray-500 mt-1">Due Date: {formData.nextDueDate}</div>
+                  <div className="font-bold text-gray-900 text-base">
+                    {formData.scaleMake || 'Make'} {formData.scaleModel ? `- ${formData.scaleModel}` : ''}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    S/N: {formData.serialNo || 'N/A'} • Cap: {formData.capacity || 'N/A'}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">Next Due: {formData.nextDueDate || 'N/A'}</div>
                 </div>
               </div>
 
@@ -531,7 +831,8 @@ export default function JobOrderWizard() {
               Job Order Created Successfully!
             </h2>
             <p className="text-sm sm:text-base text-gray-500 max-w-md mb-6">
-              Official Job Order <span className="font-bold text-gray-900">#JO-2026-0042</span> has been registered and assigned for verification.
+              Official Job Order <span className="font-bold text-gray-900">#JO-2026-0042</span> has been registered for{' '}
+              <span className="font-bold text-gray-800">{formData.customerName || 'Customer'}</span>.
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-3">
@@ -550,6 +851,8 @@ export default function JobOrderWizard() {
                   setSearchQuery('');
                   setSearchResults(null);
                   setUploadedFile(null);
+                  setOcrStatus('idle');
+                  setExtractedData(null);
                 }}
                 className="bg-[#0062ff] hover:bg-[#0055df] text-white font-semibold text-sm px-6 py-2.5 rounded-lg flex items-center gap-2 cursor-pointer transition-all shadow-sm"
               >
@@ -562,7 +865,6 @@ export default function JobOrderWizard() {
 
         {/* Bottom Navigation Buttons Footer */}
         <div className="mt-8 pt-6 border-t border-gray-100 flex items-center justify-between">
-          {/* Cancel Button */}
           <button
             type="button"
             onClick={() => {
@@ -570,15 +872,15 @@ export default function JobOrderWizard() {
               setSearchQuery('');
               setSearchResults(null);
               setUploadedFile(null);
+              setOcrStatus('idle');
+              setExtractedData(null);
             }}
             className="border border-gray-800 hover:bg-gray-50 text-gray-900 font-semibold text-sm px-6 py-2.5 rounded-lg transition-colors cursor-pointer"
           >
             Cancel
           </button>
 
-          {/* Right Action Buttons */}
           <div className="flex items-center gap-3">
-            {/* Previous Button */}
             <button
               type="button"
               disabled={currentStep === 1}
@@ -593,7 +895,6 @@ export default function JobOrderWizard() {
               <span>Previous</span>
             </button>
 
-            {/* Next / Submit Button */}
             {currentStep < 5 && (
               <button
                 type="button"
