@@ -39,6 +39,7 @@ app.add_middleware(
 )
 
 @app.get("/")
+@app.head("/")
 def read_root():
     return {
         "service": "LicenScale OCR Backend",
@@ -51,6 +52,7 @@ def read_root():
     }
 
 @app.get("/api/health")
+@app.head("/api/health")
 def health_check():
     return {"status": "healthy"}
 
@@ -99,6 +101,8 @@ async def extract_vc_endpoint(file: UploadFile = File(...)):
         )
 
 if __name__ == "__main__":
+    import os
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
 
