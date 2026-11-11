@@ -27,6 +27,7 @@ import {
   extractDetailsFromImage,
   toInputDateFormat,
   checkBackendHealth,
+  IS_LOCAL,
 } from '../utils/ocrParser';
 
 export default function JobOrderWizard() {
@@ -325,15 +326,49 @@ export default function JobOrderWizard() {
                       </span>
                     </div>
 
+                    {backendOnline === null && (
+                      <div className="w-full max-w-md mb-3 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-[11px] flex items-center gap-2">
+                        <Loader2 className="w-3.5 h-3.5 text-blue-600 animate-spin shrink-0" />
+                        <span>Connecting to OCR engine...</span>
+                      </div>
+                    )}
+
                     {backendOnline === false && (
                       <div className="w-full max-w-md mb-3 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-[11px] flex items-center justify-between">
                         <span className="flex items-center gap-1.5 font-medium">
                           <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                          <span>OCR Backend offline</span>
+                          <span>
+                            {IS_LOCAL ? 'Local OCR Backend offline' : 'Cloud OCR Server waking up...'}
+                          </span>
                         </span>
-                        <code className="text-[10px] bg-amber-100 px-1.5 py-0.5 rounded text-amber-900 font-mono">
-                          cd backend; python main.py
-                        </code>
+                        {IS_LOCAL ? (
+                          <code className="text-[10px] bg-amber-100 px-1.5 py-0.5 rounded text-amber-900 font-mono">
+                            cd backend; python main.py
+                          </code>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setBackendOnline(null);
+                              checkBackendHealth().then((up) => setBackendOnline(up));
+                            }}
+                            className="text-[10px] bg-amber-100 hover:bg-amber-200 active:scale-95 text-amber-900 px-2 py-0.5 rounded font-semibold transition-all cursor-pointer"
+                          >
+                            Retry Connection
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {backendOnline === true && (
+                      <div className="w-full max-w-md mb-3 px-3 py-1 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-[11px] flex items-center justify-between">
+                        <span className="flex items-center gap-1.5 font-medium">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>OCR Engine Active</span>
+                        </span>
+                        <span className="text-[10px] bg-emerald-100 px-1.5 py-0.5 rounded text-emerald-900 font-medium">
+                          {IS_LOCAL ? 'Local Host' : 'Render Cloud'}
+                        </span>
                       </div>
                     )}
 

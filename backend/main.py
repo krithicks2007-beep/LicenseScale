@@ -1,21 +1,32 @@
 import io
 import logging
+import threading
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 try:
-    from .ocr_engine import extract_certificate_from_image
+    from .ocr_engine import extract_certificate_from_image, get_reader
 except ImportError:
-    from ocr_engine import extract_certificate_from_image
+    from ocr_engine import extract_certificate_from_image, get_reader
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("licenscale-ocr")
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Pre-warm OCR model in background thread so health checks respond immediately
+    logger.info("Initializing OCR engine in background...")
+    warm_thread = threading.Thread(target=get_reader, daemon=True)
+    warm_thread.start()
+    yield
+
 app = FastAPI(
     title="LicenScale OCR Backend",
     description="Deep Learning OCR Service for Legal Metrology Verification Certificates",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # Enable CORS for frontend Vite dev server (and any local port)

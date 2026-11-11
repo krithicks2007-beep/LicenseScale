@@ -1,20 +1,37 @@
+import os
 import re
 import cv2
 import numpy as np
+import torch
 import easyocr
+
+# Constrain PyTorch CPU threads & disable autograd to fit easily in cloud free-tier 512MB RAM
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+torch.set_num_threads(1)
+torch.set_grad_enabled(False)
 
 _reader = None
 
 def get_reader():
     global _reader
     if _reader is None:
-        # Initialize EasyOCR English model (CPU mode)
-        _reader = easyocr.Reader(['en'], gpu=False)
+        # Initialize quantized EasyOCR English model (quantize=True halves memory usage)
+        _reader = easyocr.Reader(['en'], gpu=False, quantize=True)
     return _reader
 
 def preprocess_image(image_bytes: bytes) -> np.ndarray:
     nparr = np.frombuffer(image_bytes, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    if img is not None:
+        h, w = img.shape[:2]
+        max_dim = max(h, w)
+        # Cap image resolution to 1600px to avoid memory spikes while preserving OCR accuracy
+        if max_dim > 1600:
+            scale = 1600.0 / max_dim
+            new_w, new_h = int(w * scale), int(h * scale)
+            img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
     return img
 
 def parse_certificate_lines(lines: list[str]) -> dict:
