@@ -322,7 +322,7 @@ export default function JobOrderWizard() {
                       </h3>
                       <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
                         <Sparkles className="w-3 h-3 text-emerald-600" />
-                        <span>EasyOCR AI</span>
+                        <span>Gemini AI Vision</span>
                       </span>
                     </div>
 

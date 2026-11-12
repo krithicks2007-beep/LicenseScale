@@ -17,6 +17,13 @@ frontend/node_modules
 frontend/dist
 frontend/.vite
 
+# Environment variables
+.env
+.env.local
+.env.*.local
+*.env
+backend/.env
+
 # Python / Backend
 __pycache__/
 *.py[cod]
