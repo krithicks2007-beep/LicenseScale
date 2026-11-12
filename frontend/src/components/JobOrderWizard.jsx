@@ -51,11 +51,23 @@ export default function JobOrderWizard() {
 
   useEffect(() => {
     let isMounted = true;
-    checkBackendHealth().then((isUp) => {
-      if (isMounted) setBackendOnline(isUp);
-    });
+    let timerId = null;
+
+    const pollHealth = async () => {
+      const isUp = await checkBackendHealth();
+      if (!isMounted) return;
+      setBackendOnline(isUp);
+      if (!isUp) {
+        // Automatically check again every 3.5 seconds until awake
+        timerId = setTimeout(pollHealth, 3500);
+      }
+    };
+
+    pollHealth();
+
     return () => {
       isMounted = false;
+      if (timerId) clearTimeout(timerId);
     };
   }, []);
 
@@ -336,9 +348,9 @@ export default function JobOrderWizard() {
                     {backendOnline === false && (
                       <div className="w-full max-w-md mb-3 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-[11px] flex items-center justify-between">
                         <span className="flex items-center gap-1.5 font-medium">
-                          <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                          <Loader2 className="w-3.5 h-3.5 text-amber-600 animate-spin shrink-0" />
                           <span>
-                            {IS_LOCAL ? 'Local OCR Backend offline' : 'Cloud OCR Server waking up...'}
+                            {IS_LOCAL ? 'Local OCR Backend offline' : 'Cloud server waking up... (~30s)'}
                           </span>
                         </span>
                         {IS_LOCAL ? (
@@ -354,7 +366,7 @@ export default function JobOrderWizard() {
                             }}
                             className="text-[10px] bg-amber-100 hover:bg-amber-200 active:scale-95 text-amber-900 px-2 py-0.5 rounded font-semibold transition-all cursor-pointer"
                           >
-                            Retry Connection
+                            Check Now
                           </button>
                         )}
                       </div>

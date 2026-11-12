@@ -22,27 +22,21 @@ export function toInputDateFormat(dateStr) {
 
 /**
  * Checks if the Python FastAPI Deep Learning OCR backend is alive
- * Uses 15s timeout for cloud servers (Render free tier cold start) and retries
+ * Uses 8s timeout for cloud servers and returns false if still spinning up
  */
 export async function checkBackendHealth() {
-  const timeoutMs = IS_LOCAL ? 4000 : 15000;
+  const timeoutMs = IS_LOCAL ? 4000 : 8000;
 
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/health`, {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-        signal: AbortSignal.timeout(timeoutMs),
-      });
-      if (res.ok) return true;
-    } catch {
-      if (attempt === 0 && !IS_LOCAL) {
-        // Wait 2 seconds before retry if waking up from sleep
-        await new Promise((r) => setTimeout(r, 2000));
-      }
-    }
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/health`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    return res.ok;
+  } catch {
+    return false;
   }
-  return false;
 }
 
 /**
